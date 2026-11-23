@@ -48,23 +48,36 @@ Rules: Use actions/checkout@v6, actions/setup-node@v6 and actions/upload-artifac
   8. path: playwright-report/ – Specifies the folder containing the report to upload.
 
 ## 5. The first run on GitHub
-- **Run:** Add the CI workflow · **Result:** … · **Tests:** …
-- **The report (artifact):** …
+- **Run:** Add the CI workflow · **Result:** Green tick – All Playwright tests passed successfully on GitHub Actions. · **Tests:** 23 passed
+- **The report (artifact):** playwright-report under Artifacts: Yes
 
 ## 6. A red run on purpose
 - **The change:** `tests/example.spec.ts` line 6, `toBe(200)` → `toBe(201)`
-- **My prediction:** …
-- **What GitHub showed:** …
+- **My prediction:** The Run the Playwright tests step will turn red because the test expects status code 201, but the GET /api/tags request should return 200 OK. The status assertion will fail because the expected status code is incorrect.
+- **What GitHub showed:** Expected: 201 · Received: 200 · Because the API GET request (/api/tags) should return 200 OK, but the test incorrectly expects 201 Created.
 
 ## 7. Fixed, and green again
-- **The fix:** line 6 back to `toBe(200)` · **Run:** Fix the expected status · **Result:** …
+- **The fix:** line 6 back to `toBe(200)` · **Run:** Fix the expected status · **Result:** 23 passed
 
 ## 8. Review notes for my other AI-written tests (written while CI ran)
 The API checklist: status · body · shape · negative cases (a refused request changes nothing) · own test data.
 Monday's and Tuesday's tests that I did not review in depth on those days. Each one: kept, changed or removed, and why.
 
 ### Monday: `tests/api.spec.ts`
-- "…": **kept / changed / removed**, because …
+- "anyone can read a created article by its slug": **kept**, because It validates the 200 status, response fields and data accuracy. It also uses its own test user.
+- "the author deletes an article, and it can no longer be read": **kept**, because It verifies the 204 response, empty body and confirms the article returns 404 after deletion.
+- "creating an article without a token gives 401 and saves nothing": **kept**, because It checks the 401 response, error message and confirms no article was created.
+- "creating an article without a title gives 422 and saves nothing": **kept**, because It validates the 422 response, error message and confirms no data was saved.
+- "another user cannot change someone else's article": **kept**, because It checks the 403 response and verifies the original article title and body remain unchanged.
+- "another user cannot delete someone else's article": **kept**, because It checks the 403 response and confirms the article still exists without changes.
+- "reading an article that does not exist gives 404": **kept**, because It validates the 404 response and error message using a unique slug.
+
+Overall: All 7 tests are worth keeping because they cover successful requests, negative scenarios, authorization, response validation and data integrity
 
 ### Tuesday: `tests/contract.spec.ts`
-- "…": **kept / changed / removed**, because …
+- "GET /api/user answers with the User shape": **changed**, because It checks the 200 status and response fields, but toMatchObject does not validate the complete response structure. Add an exact key check to ensure no unexpected or missing fields.
+- "GET /api/user without a token gives 401 "is missing"": **kept**, because It validates the 401 status and exact error response when the authentication token is missing.
+- "GET /api/user with a wrong token gives 401 "is invalid"": **kept**, because It verifies that invalid authentication is rejected with the correct status and error message.
+- "PUT on someone else's article gives 403 and leaves it unchanged": **kept**, because It checks the 403 response and verifies that the article remains unchanged after the unauthorized update.
+
+Overall: Keep all four tests, but improve Test 1 by adding complete response-shape validation.
